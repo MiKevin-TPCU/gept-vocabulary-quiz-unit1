@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-react';
+import { CheckCircle2, XCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useQuizDataStorage } from '@/hooks/useQuizDataStorage';
@@ -290,14 +290,6 @@ export default function ResultsPage({
 
           {/* Action Buttons */}
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button
-              onClick={onRestart}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3"
-            >
-              <RotateCcw className="w-4 h-4" />
-              再做一次
-            </Button>
-
             {onBackHome && (
               <Button
                 onClick={onBackHome}

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import TestTypeSelector from '@/components/TestTypeSelector';
 import ClassSelector from '@/components/ClassSelector';
 import StudentSelector from '@/components/StudentSelector';
+import SexSelector from '@/components/SexSelector';
 import QuizInstructions from '@/components/QuizInstructions';
 import QuestionCard from '@/components/QuestionCard';
 import ResultsPage from '@/components/ResultsPage';
@@ -13,7 +14,7 @@ import { getQuizVersion } from '@/data/quizDataMultiVersion';
  * 
  * Design Philosophy:
  * - Modern EdTech interface with focus on classroom management
- * - Clear step-by-step flow: Test Type → Class → Student → Instructions → Quiz → Results
+ * - Clear step-by-step flow: Test Type → Class → Student → Sex → Instructions → Quiz → Results
  * - Bright, welcoming colors with smooth animations
  * - Support for three classes and student verification
  */
@@ -40,6 +41,11 @@ export default function Home() {
             {quiz.state.selectedStudent && (
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <span>{quiz.state.selectedStudent.id} - {quiz.state.selectedStudent.name}</span>
+                {quiz.state.selectedSex && (
+                  <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                    {quiz.state.selectedSex === 'male' ? '男' : '女'}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -82,7 +88,18 @@ export default function Home() {
             />
           )}
 
-          {/* Step 4: Quiz Instructions */}
+          {/* Step 4: Sex Selection */}
+          {quiz.state.step === 'sex-select' && quiz.state.selectedStudent && (
+            <SexSelector
+              studentName={quiz.state.selectedStudent.name}
+              onSelectSex={quiz.handleSelectSex}
+              onBack={() => {
+                quiz.handleBackToClassSelect();
+              }}
+            />
+          )}
+
+          {/* Step 5: Quiz Instructions */}
           {quiz.state.step === 'quiz-instructions' && 
            quiz.state.selectedStudent && 
            quizVersion && (
@@ -91,11 +108,13 @@ export default function Home() {
               testType={quiz.state.selectedTestType!}
               quizVersion={quizVersion}
               onStart={() => quiz.handleStartQuiz(quizVersion)}
-              onBack={quiz.handleBackToClassSelect}
+              onBack={() => {
+                quiz.handleBackToClassSelect();
+              }}
             />
           )}
 
-          {/* Step 5: Quiz */}
+          {/* Step 6: Quiz */}
           {quiz.state.step === 'quiz' && quiz.currentQuestion && (
             <QuestionCard
               question={quiz.currentQuestion}
@@ -112,7 +131,7 @@ export default function Home() {
             />
           )}
 
-          {/* Step 6: Results */}
+          {/* Step 7: Results */}
           {quiz.state.step === 'results' && quiz.state.quizCompleted && (
             <ResultsPage
               score={quiz.calculateScore()}

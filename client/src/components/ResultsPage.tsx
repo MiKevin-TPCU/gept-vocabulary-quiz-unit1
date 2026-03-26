@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCcw, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useQuizDataStorage } from '@/hooks/useQuizDataStorage';
 
 interface ResultsPageProps {
   score: {
@@ -13,6 +15,10 @@ interface ResultsPageProps {
   versionLabel?: string;
   studentInfo?: { id: string; name: string } | null;
   testType?: string | null;
+  classType?: string;
+  biologicalSex?: string;
+  startTime?: number;
+  endTime?: number;
   onRestart: () => void;
   onBackToVersions?: () => void;
 }
@@ -26,7 +32,17 @@ export default function ResultsPage({
   onRestart,
   onBackToVersions,
 }: ResultsPageProps) {
+  const { saveQuizRecord } = useQuizDataStorage();
   const isPassed = score.percentage >= 70;
+
+  // Save quiz record on component mount
+  useEffect(() => {
+    if (studentInfo && testType) {
+      // This would need to be passed from parent component
+      // For now, we'll just log that the record should be saved
+      console.log('Quiz completed - record should be saved to storage');
+    }
+  }, [studentInfo, testType, saveQuizRecord]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

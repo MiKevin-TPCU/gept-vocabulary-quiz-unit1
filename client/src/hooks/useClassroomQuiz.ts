@@ -4,6 +4,7 @@ import { QuizVersion } from '@/data/quizDataMultiVersion';
 
 export type ClassType = 'Class TL' | 'Class KB' | 'Class EER';
 export type QuizType = 'pretest' | 'immediate_posttest';
+export type BiologicalSex = 'male' | 'female';
 
 export interface StudentInfo {
   id: string;
@@ -11,10 +12,11 @@ export interface StudentInfo {
 }
 
 export interface ClassroomQuizState {
-  step: 'test-type' | 'class-select' | 'student-select' | 'quiz-instructions' | 'quiz' | 'results';
+  step: 'test-type' | 'class-select' | 'student-select' | 'sex-select' | 'quiz-instructions' | 'quiz' | 'results';
   selectedTestType: QuizType | null;
   selectedClass: ClassType | null;
   selectedStudent: StudentInfo | null;
+  selectedSex: BiologicalSex | null;
   currentQuestionIndex: number;
   answers: Record<number, string>;
   showFeedback: boolean;
@@ -30,6 +32,7 @@ export const useClassroomQuiz = () => {
     selectedTestType: null,
     selectedClass: null,
     selectedStudent: null,
+    selectedSex: null,
     currentQuestionIndex: 0,
     answers: {},
     showFeedback: false,
@@ -59,6 +62,14 @@ export const useClassroomQuiz = () => {
     setState(prev => ({
       ...prev,
       selectedStudent: student,
+      step: 'sex-select',
+    }));
+  }, []);
+
+  const handleSelectSex = useCallback((sex: BiologicalSex) => {
+    setState(prev => ({
+      ...prev,
+      selectedSex: sex,
       step: 'quiz-instructions',
     }));
   }, []);
@@ -124,6 +135,7 @@ export const useClassroomQuiz = () => {
       step: 'class-select',
       selectedClass: null,
       selectedStudent: null,
+      selectedSex: null,
     }));
   }, []);
 
@@ -177,6 +189,7 @@ export const useClassroomQuiz = () => {
     handleSelectTestType,
     handleSelectClass,
     handleSelectStudent,
+    handleSelectSex,
     handleStartQuiz,
     handleAnswerSelect,
     handleNextQuestion,

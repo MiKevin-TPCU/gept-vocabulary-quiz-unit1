@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Trash2, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
+import { Download, Trash2, Eye, EyeOff, Lock, Unlock, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuizDataStorage } from '@/hooks/useQuizDataStorage';
-import { useLocation } from 'wouter';
 
 export default function AdminDashboard() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { records, exportToCSV, exportToJSON, clearAllRecords } = useQuizDataStorage();
+  const { records, exportToCSV, exportToJSON, exportToExcel, clearAllRecords } = useQuizDataStorage();
 
   const handleLogin = () => {
     // Simple password check (in production, this should be more secure)
@@ -41,8 +40,8 @@ export default function AdminDashboard() {
               <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-2xl">🔐</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">後台管理</h1>
-              <p className="text-gray-600 mt-2">GEPT 詞彙測驗數據管理系統</p>
+              <h1 className="text-2xl font-bold text-gray-900">後台管理系統</h1>
+              <p className="text-gray-600 mt-2">GEPT 詞彙測驗數據管理</p>
             </div>
 
             <div className="space-y-4">
@@ -76,9 +75,20 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500 text-center mt-6">
-              提示：密碼為 gept2024
-            </p>
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>使用說明：</strong>
+              </p>
+              <p className="text-xs text-gray-600 mb-2">
+                • 在首頁底部找到「後台管理」連結
+              </p>
+              <p className="text-xs text-gray-600 mb-2">
+                • 或直接訪問：<code className="bg-white px-2 py-1 rounded text-blue-600">/admin</code>
+              </p>
+              <p className="text-xs text-gray-600">
+                • 預設密碼：<code className="bg-white px-2 py-1 rounded text-blue-600">gept2024</code>
+              </p>
+            </div>
           </Card>
         </motion.div>
       </div>
@@ -117,6 +127,34 @@ export default function AdminDashboard() {
           transition={{ duration: 0.3 }}
           className="space-y-6"
         >
+          {/* Usage Guide */}
+          <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              使用說明
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-700">
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">訪問路徑</p>
+                <p className="text-gray-600">
+                  在首頁點擊底部「後台管理」連結，或直接訪問 <code className="bg-white px-2 py-1 rounded text-blue-600">/admin</code>
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">數據導出</p>
+                <p className="text-gray-600">
+                  支持三種格式：CSV、JSON、Excel（.xlsx）。選擇下方「數據導出」區域的按鈕即可下載
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">數據內容</p>
+                <p className="text-gray-600">
+                  包含學號、姓名、生理性別、班級、測驗類型、進行時長、各題答案和總成績
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Statistics */}
           <div className="grid md:grid-cols-4 gap-4">
             <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
@@ -153,8 +191,16 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">數據導出</h2>
             <div className="flex gap-4 flex-wrap">
               <Button
-                onClick={exportToCSV}
+                onClick={exportToExcel}
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold"
+              >
+                <Download className="w-4 h-4" />
+                導出為 Excel (.xlsx)
+              </Button>
+
+              <Button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
                 <Download className="w-4 h-4" />
                 導出為 CSV
@@ -162,7 +208,7 @@ export default function AdminDashboard() {
 
               <Button
                 onClick={exportToJSON}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
               >
                 <Download className="w-4 h-4" />
                 導出為 JSON
@@ -181,64 +227,81 @@ export default function AdminDashboard() {
 
           {/* Records Table */}
           <Card className="p-6 bg-white border-gray-200 overflow-x-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">測驗記錄</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">測驗記錄詳情</h2>
             {records.length === 0 ? (
               <p className="text-gray-500 text-center py-8">暫無測驗記錄</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b-2 border-gray-200">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">測驗時間</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">進行時長</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">學號</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">姓名</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">性別</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">班級</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">測驗類型</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">正確/總數</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-900">成績</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((record, index) => (
-                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-4 py-2 text-gray-700">
-                        {new Date(record.timestamp).toLocaleString('zh-TW')}
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{record.duration}秒</td>
-                      <td className="px-4 py-2 text-gray-700">{record.studentId}</td>
-                      <td className="px-4 py-2 text-gray-700">{record.studentName}</td>
-                      <td className="px-4 py-2 text-gray-700">
-                        {record.biologicalSex === 'male' ? '男' : '女'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{record.classType}</td>
-                      <td className="px-4 py-2 text-gray-700">
-                        {record.testType === 'pretest' ? '前測' : '立即後測'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">
-                        {record.correctAnswers}/{record.totalQuestions}
-                      </td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`px-3 py-1 rounded-full text-white font-semibold text-sm ${
-                            record.totalScore >= 70
-                              ? 'bg-green-600'
-                              : record.totalScore >= 50
-                              ? 'bg-yellow-600'
-                              : 'bg-red-600'
-                          }`}
-                        >
-                          {record.totalScore}
-                        </span>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">測驗時間</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">進行時長</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">學號</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">姓名</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">性別</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">班級</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">測驗類型</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">正確/總數</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900">成績</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {records.map((record, index) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {new Date(record.timestamp).toLocaleString('zh-TW')}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{record.duration}秒</td>
+                        <td className="px-4 py-3 text-gray-700 font-semibold">{record.studentId}</td>
+                        <td className="px-4 py-3 text-gray-700">{record.studentName}</td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          <span className="inline-block px-2 py-1 bg-gray-100 rounded text-sm">
+                            {record.biologicalSex === 'male' ? '男' : '女'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">{record.classType}</td>
+                        <td className="px-4 py-3 text-gray-700">
+                          <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                            record.testType === 'pretest' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {record.testType === 'pretest' ? '前測' : '立即後測'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {record.correctAnswers}/{record.totalQuestions}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span
+                            className={`px-3 py-1 rounded-full text-white font-semibold text-sm inline-block ${
+                              record.totalScore >= 70
+                                ? 'bg-green-600'
+                                : record.totalScore >= 50
+                                ? 'bg-yellow-600'
+                                : 'bg-red-600'
+                            }`}
+                          >
+                            {record.totalScore}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Card>
         </motion.div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-50 border-t border-gray-200 mt-12">
+        <div className="container py-6 text-center text-sm text-gray-600">
+          <p>GEPT 詞彙互動測驗平台 - 後台管理系統</p>
+        </div>
+      </footer>
     </div>
   );
 }

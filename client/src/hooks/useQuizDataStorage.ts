@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { StudentInfo, BiologicalSex, QuizType } from './useClassroomQuiz';
 
 export interface QuizRecord {
@@ -151,6 +152,54 @@ export const useQuizDataStorage = () => {
     document.body.removeChild(link);
   }, [records]);
 
+  const exportToExcel = useCallback(() => {
+    if (records.length === 0) {
+      alert('沒有測驗記錄可導出');
+      return;
+    }
+
+    // Prepare data for Excel
+    const excelData = records.map(record => ({
+      '測驗時間': record.timestamp,
+      '進行時長(秒)': record.duration,
+      '學號': record.studentId,
+      '姓名': record.studentName,
+      '生理性別': record.biologicalSex === 'male' ? '男' : '女',
+      '班級': record.classType,
+      '測驗類型': record.testType === 'pretest' ? '前測' : '立即後測',
+      '總題數': record.totalQuestions,
+      '正確題數': record.correctAnswers,
+      '總成績': record.totalScore,
+      '各題答案': Object.entries(record.answers)
+        .map(([_, answer]) => `Q${answer.questionId}:${answer.selected}${answer.isCorrect ? '✓' : '✗'}`)
+        .join(' | '),
+    }));
+
+    // Create workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Quiz Results');
+
+    // Set column widths
+    const colWidths = [
+      { wch: 20 }, // 測驗時間
+      { wch: 15 }, // 進行時長
+      { wch: 12 }, // 學號
+      { wch: 12 }, // 姓名
+      { wch: 10 }, // 生理性別
+      { wch: 12 }, // 班級
+      { wch: 12 }, // 測驗類型
+      { wch: 10 }, // 總題數
+      { wch: 10 }, // 正確題數
+      { wch: 10 }, // 總成績
+      { wch: 50 }, // 各題答案
+    ];
+    worksheet['!cols'] = colWidths;
+
+    // Download Excel file
+    XLSX.writeFile(workbook, `GEPT_Quiz_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }, [records]);
+
   const clearAllRecords = useCallback(() => {
     if (window.confirm('確定要清除所有測驗記錄嗎？此操作無法撤銷。')) {
       setRecords([]);
@@ -175,6 +224,7 @@ export const useQuizDataStorage = () => {
     saveQuizRecord,
     exportToCSV,
     exportToJSON,
+    exportToExcel,
     clearAllRecords,
     getRecordsByClass,
     getRecordsByTestType,

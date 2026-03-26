@@ -154,6 +154,11 @@ export default function Home() {
           <p className="mt-2 text-xs text-gray-500">
             碩論研究實驗設計 - 第一週測驗
           </p>
+          <p className="mt-4 text-xs">
+            <a href="/admin" className="text-blue-600 hover:text-blue-800 underline">
+              後台管理
+            </a>
+          </p>
         </div>
       </footer>
     </div>

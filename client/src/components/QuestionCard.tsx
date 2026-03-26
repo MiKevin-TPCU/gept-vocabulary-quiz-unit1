@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { QuizQuestion } from '@/data/quizData';
+import { QuizQuestion } from '@/data/quizDataMultiVersion';
 
 interface QuestionCardProps {
   question: QuizQuestion;
@@ -120,16 +120,8 @@ export default function QuestionCard({
             </div>
             <div className="text-sm text-gray-700">
               <p className="mb-2">
-                <strong>詞彙：</strong> {question.correctAnswer}
+                <strong>正確答案：</strong> {question.correctAnswer}
               </p>
-              <p className="mb-2">
-                <strong>中文：</strong> {question.chineseMeaning}
-              </p>
-              {question.explanation && (
-                <p>
-                  <strong>解釋：</strong> {question.explanation}
-                </p>
-              )}
             </div>
           </motion.div>
         )}

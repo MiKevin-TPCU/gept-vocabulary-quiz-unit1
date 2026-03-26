@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion';
-import { RotateCcw, CheckCircle2, XCircle } from 'lucide-react';
+import { RotateCcw, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { quizData } from '@/data/quizData';
 
 interface ResultsPageProps {
   score: {
@@ -11,10 +10,18 @@ interface ResultsPageProps {
     percentage: number;
   };
   answers: Record<number, string>;
+  versionLabel?: string;
   onRestart: () => void;
+  onBackToVersions?: () => void;
 }
 
-export default function ResultsPage({ score, answers, onRestart }: ResultsPageProps) {
+export default function ResultsPage({
+  score,
+  answers,
+  versionLabel,
+  onRestart,
+  onBackToVersions,
+}: ResultsPageProps) {
   const isPassed = score.percentage >= 70;
 
   const containerVariants = {
@@ -48,6 +55,12 @@ export default function ResultsPage({ score, answers, onRestart }: ResultsPagePr
       <motion.div variants={itemVariants}>
         <Card className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
           <div className="text-center">
+            {versionLabel && (
+              <p className="text-sm text-blue-600 font-semibold mb-2">
+                {versionLabel}
+              </p>
+            )}
+
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -57,9 +70,10 @@ export default function ResultsPage({ score, answers, onRestart }: ResultsPagePr
               {isPassed ? (
                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
               ) : (
-                <XCircle className="w-16 h-16 text-orange-500 mx-auto" />
+                <CheckCircle2 className="w-16 h-16 text-orange-500 mx-auto" />
               )}
             </motion.div>
+
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               {isPassed ? '恭喜！' : '再加油！'}
             </h2>
@@ -103,46 +117,31 @@ export default function ResultsPage({ score, answers, onRestart }: ResultsPagePr
         </Card>
       </motion.div>
 
-      {/* Detailed Results */}
+      {/* Answer Summary */}
       <motion.div variants={itemVariants}>
         <Card className="p-6 bg-white">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">詳細答案</h3>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {quizData.map((question, index) => {
-              const userAnswer = answers[question.id];
-              const isCorrect = userAnswer === question.correctAnswer;
-
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">您的答案</h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {Object.entries(answers).map((entry, index) => {
+              const userAnswer = entry[1];
               return (
                 <motion.div
-                  key={question.id}
+                  key={entry[0]}
                   variants={itemVariants}
-                  className={`p-4 rounded-lg border-l-4 ${
-                    isCorrect
-                      ? 'bg-green-50 border-green-500'
-                      : 'bg-red-50 border-red-500'
-                  }`}
+                  className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-between"
                 >
-                  <div className="flex items-start gap-3">
-                    {isCorrect ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 mb-1">
-                        第 {index + 1} 題
-                      </p>
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>詞彙：</strong> {question.correctAnswer}
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <strong>您的答案：</strong>{' '}
-                        <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
-                          {userAnswer || '未作答'}
-                        </span>
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-gray-600 w-8">
+                      第 {index + 1}
+                    </span>
+                    <span className="text-sm text-gray-700">
+                      <strong>答案：</strong>
+                      <span className="text-blue-600 font-medium ml-2">
+                        {userAnswer || '未作答'}
+                      </span>
+                    </span>
                   </div>
+                  <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
                 </motion.div>
               );
             })}
@@ -151,14 +150,24 @@ export default function ResultsPage({ score, answers, onRestart }: ResultsPagePr
       </motion.div>
 
       {/* Action Buttons */}
-      <motion.div variants={itemVariants} className="flex gap-4 justify-center">
+      <motion.div variants={itemVariants} className="flex gap-4 justify-center flex-wrap">
         <Button
           onClick={onRestart}
           className="px-8 py-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2"
         >
           <RotateCcw className="w-5 h-5" />
-          重新開始
+          重新開始此版本
         </Button>
+        {onBackToVersions && (
+          <Button
+            onClick={onBackToVersions}
+            variant="outline"
+            className="px-8 py-6 font-semibold flex items-center gap-2"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            返回版本選擇
+          </Button>
+        )}
       </motion.div>
     </motion.div>
   );

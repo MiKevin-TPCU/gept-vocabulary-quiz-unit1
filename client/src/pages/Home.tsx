@@ -1,30 +1,27 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import WelcomePage from '@/components/WelcomePage';
+import VersionSelector from '@/components/VersionSelector';
 import QuestionCard from '@/components/QuestionCard';
 import ResultsPage from '@/components/ResultsPage';
-import { useQuiz } from '@/hooks/useQuiz';
+import { useMultiVersionQuiz } from '@/hooks/useMultiVersionQuiz';
+import { getAllVersions } from '@/data/quizDataMultiVersion';
 
 /**
- * Home Page - Main Quiz Interface
+ * Home Page - Multi-Version Quiz Interface
  * 
  * Design Philosophy:
  * - Clean, modern EdTech interface with focus on learning
  * - Bright, welcoming colors (blue primary, green success, red error)
  * - Smooth animations and transitions for engagement
  * - Clear information hierarchy and visual feedback
+ * - Support for three test versions: pretest, immediate posttest, delayed posttest
  */
 export default function Home() {
-  const [quizStarted, setQuizStarted] = useState(false);
-  const quiz = useQuiz();
+  const quiz = useMultiVersionQuiz();
+  const versions = getAllVersions();
 
-  const handleStartQuiz = () => {
-    setQuizStarted(true);
-  };
-
-  const handleRestart = () => {
+  const handleBackToVersions = () => {
     quiz.handleRestart();
-    setQuizStarted(false);
   };
 
   return (
@@ -39,10 +36,23 @@ export default function Home() {
               </div>
               <h1 className="text-xl font-bold text-gray-900">GEPT 詞彙測驗</h1>
             </div>
-            {quizStarted && !quiz.state.quizCompleted && (
-              <div className="text-sm text-gray-600">
-                進度: {quiz.progress.current} / {quiz.progress.total}
+            {quiz.state.selectedVersion && !quiz.state.quizCompleted && (
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  {quiz.state.selectedVersion.label}
+                </div>
+                <div className="text-sm text-gray-600">
+                  進度: {quiz.progress.current} / {quiz.progress.total}
+                </div>
               </div>
+            )}
+            {quiz.state.quizCompleted && (
+              <button
+                onClick={handleBackToVersions}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                ← 返回版本選擇
+              </button>
             )}
           </div>
         </div>
@@ -52,25 +62,41 @@ export default function Home() {
       <main className="container py-8 md:py-12">
         <motion.div
           key={
-            !quizStarted ? 'welcome' : quiz.state.quizCompleted ? 'results' : 'quiz'
+            !quiz.state.selectedVersion
+              ? 'version-selector'
+              : quiz.state.quizCompleted
+              ? 'results'
+              : 'quiz'
           }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="max-w-2xl mx-auto"
+          className="max-w-4xl mx-auto"
         >
-          {!quizStarted ? (
-            <WelcomePage onStart={handleStartQuiz} />
-          ) : quiz.state.quizCompleted ? (
-            <ResultsPage
-              score={quiz.calculateScore()}
-              answers={quiz.state.answers}
-              onRestart={handleRestart}
+          {!quiz.state.selectedVersion ? (
+            <VersionSelector
+              versions={versions}
+              onSelectVersion={(versionName) => {
+                const selectedVersion = versions.find(v => v.name === versionName);
+                if (selectedVersion) {
+                  quiz.handleSelectVersion(selectedVersion);
+                }
+              }}
             />
+          ) : quiz.state.quizCompleted ? (
+            <div>
+              <ResultsPage
+                score={quiz.calculateScore()}
+                answers={quiz.state.answers}
+                versionLabel={quiz.state.selectedVersion.label}
+                onRestart={quiz.handleRestartSameVersion}
+                onBackToVersions={handleBackToVersions}
+              />
+            </div>
           ) : (
             <QuestionCard
-              question={quiz.currentQuestion}
+              question={quiz.currentQuestion!}
               selectedAnswer={quiz.selectedAnswer}
               showFeedback={quiz.state.showFeedback}
               isCorrect={quiz.isCorrect}
@@ -91,7 +117,7 @@ export default function Home() {
         <div className="container py-6 text-center text-sm text-gray-600">
           <p>GEPT 詞彙互動測驗平台 | 所有詞彙來自 GEPT 初級官方詞彙表</p>
           <p className="mt-2 text-xs text-gray-500">
-            設計用於語言學習研究實驗
+            碩論研究實驗設計 - 第一單元詞彙測驗
           </p>
         </div>
       </footer>

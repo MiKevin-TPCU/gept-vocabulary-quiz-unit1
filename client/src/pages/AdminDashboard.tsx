@@ -14,7 +14,7 @@ export default function AdminDashboard() {
 
   const handleLogin = () => {
     // Simple password check (in production, this should be more secure)
-    if (password === 'gept2024') {
+    if (password === 'mikekaku') {
       setIsAuthenticated(true);
     } else {
       alert('密碼錯誤');
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
                 • 或直接訪問：<code className="bg-white px-2 py-1 rounded text-blue-600">/admin</code>
               </p>
               <p className="text-xs text-gray-600">
-                • 預設密碼：<code className="bg-white px-2 py-1 rounded text-blue-600">gept2024</code>
+                • 預設密碼：<code className="bg-white px-2 py-1 rounded text-blue-600">mikekaku</code>
               </p>
             </div>
           </Card>

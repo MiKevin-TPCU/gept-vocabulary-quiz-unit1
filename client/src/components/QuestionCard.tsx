@@ -98,15 +98,15 @@ export default function QuestionCard({
             return (
               <motion.button
                 key={index}
-                onClick={() => !isAnswered && onSelectAnswer(option)}
-                disabled={isAnswered}
-                whileHover={!isAnswered ? { scale: 1.02 } : {}}
-                whileTap={!isAnswered ? { scale: 0.98 } : {}}
+                onClick={() => onSelectAnswer(option)}
+                disabled={false}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
                   isSelected
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 bg-white hover:border-blue-300'
-                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                } cursor-pointer`}
               >
                 <div className="flex items-start gap-3">
                   <div

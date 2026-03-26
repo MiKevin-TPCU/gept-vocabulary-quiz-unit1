@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { QuizQuestion } from '@/data/quizDataMultiVersion';
@@ -37,6 +37,7 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   const progressPercentage = ((currentIndex + 1) / totalQuestions) * 100;
   const isTimeWarning = timeRemaining < 120; // Less than 2 minutes
+  const isAnswered = selectedAnswer !== null && selectedAnswer !== undefined;
 
   return (
     <motion.div
@@ -79,130 +80,102 @@ export default function QuestionCard({
               }`}
             >
               <Clock className="w-4 h-4" />
-              <span>{formatTime(timeRemaining)}</span>
+              {formatTime(timeRemaining)}
             </div>
           </div>
         </div>
 
-        {/* Question */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">
-            {question.sentence}
-          </h2>
-
-          {/* Options */}
-          <div className="space-y-3">
-            {question.options.map((option, index) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrectOption = option === question.correctAnswer;
-              const showCorrect = showFeedback && isCorrectOption;
-              const showIncorrect = showFeedback && isSelected && !isCorrectOption;
-
-              return (
-                <motion.button
-                  key={index}
-                  onClick={() => !showFeedback && onSelectAnswer(option)}
-                  disabled={showFeedback}
-                  whileHover={!showFeedback ? { scale: 1.02 } : {}}
-                  whileTap={!showFeedback ? { scale: 0.98 } : {}}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    showCorrect
-                      ? 'border-green-500 bg-green-50'
-                      : showIncorrect
-                      ? 'border-red-500 bg-red-50'
-                      : isSelected
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-blue-300'
-                  } ${showFeedback ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                        showCorrect
-                          ? 'border-green-500 bg-green-500'
-                          : showIncorrect
-                          ? 'border-red-500 bg-red-500'
-                          : isSelected
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {showCorrect || showIncorrect || isSelected ? (
-                        <span className="text-white text-sm font-bold">
-                          {String.fromCharCode(65 + index)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-sm font-bold">
-                          {String.fromCharCode(65 + index)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium ${
-                          showCorrect
-                            ? 'text-green-700'
-                            : showIncorrect
-                            ? 'text-red-700'
-                            : isSelected
-                            ? 'text-blue-700'
-                            : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </p>
-                    </div>
-                    {showCorrect && <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />}
-                    {showIncorrect && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />}
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-
-          {/* Feedback Messages */}
-          {showFeedback && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mt-6 p-4 rounded-lg ${
-                isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-              }`}
-            >
-              <p
-                className={`font-semibold mb-2 ${
-                  isCorrect ? 'text-green-700' : 'text-red-700'
-                }`}
-              >
-                {isCorrect ? '✓ 正確！' : '✗ 不正確'}
-              </p>
-              <p className="text-sm text-gray-700 mb-2">
-                <strong>正確答案：</strong> {question.correctAnswer}
-              </p>
-              <p className="text-sm text-gray-700">
-                <strong>正確答案說明：</strong> 這是正確的選項。
-              </p>
-            </motion.div>
-          )}
+        {/* Question Text */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">{question.sentence}</h2>
         </div>
 
+        {/* Options */}
+        <div className="space-y-3 mb-6">
+          {question.options.map((option, index) => {
+            const isSelected = selectedAnswer === option;
+
+            return (
+              <motion.button
+                key={index}
+                onClick={() => !isAnswered && onSelectAnswer(option)}
+                disabled={isAnswered}
+                whileHover={!isAnswered ? { scale: 1.02 } : {}}
+                whileTap={!isAnswered ? { scale: 0.98 } : {}}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  isSelected
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 bg-white hover:border-blue-300'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-500'
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    {isSelected ? (
+                      <span className="text-white text-sm font-bold">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm font-bold">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`font-medium ${
+                        isSelected
+                          ? 'text-blue-700'
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      {option}
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Status Message */}
+        {isAnswered && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200"
+          >
+            <p className="text-blue-700 font-semibold">
+              ✓ 已填答。請點擊「下一題」繼續。
+            </p>
+          </motion.div>
+        )}
+
         {/* Navigation Buttons */}
-        <div className="flex gap-3 justify-between">
+        <div className="flex gap-3">
+          {/* Previous Button - Always Disabled */}
           <Button
             onClick={onPrevious}
-            disabled={!canGoPrevious}
+            disabled={true}
             variant="outline"
-            className="flex-1"
+            className="flex-1 opacity-50 cursor-not-allowed"
+            title="無法返回前一題"
           >
-            ← 上一題
+            ← 上一題（禁用）
           </Button>
 
+          {/* Next Button - Only enabled after answering */}
           <Button
             onClick={onNext}
-            disabled={!showFeedback || !canGoNext}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={!isAnswered}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
           >
-            {canGoNext ? '下一題 →' : '提交答案'}
+            {canGoNext ? '下一題 →' : '查看結果'}
           </Button>
         </div>
       </Card>

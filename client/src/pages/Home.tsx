@@ -27,9 +27,10 @@ export default function Home() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   // Get quiz version based on test type
-  const quizVersion = quiz.state.selectedVersion
-    ? quiz.state.selectedVersion
-    : null;
+  // Use selectedTestType to get the quiz version for quiz-instructions step
+  const quizVersion = quiz.state.selectedTestType
+    ? getQuizVersion(quiz.state.selectedTestType)
+    : quiz.state.selectedVersion;
 
   const handleAdminAccess = () => {
     setShowPasswordModal(true);
@@ -68,15 +69,11 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container py-8 md:py-12">
+      <main className="container max-w-4xl py-8">
         <motion.div
-          key={quiz.state.step}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="max-w-4xl mx-auto"
+          transition={{ duration: 0.5 }}
         >
           {/* Step 1: Test Type Selection */}
           {quiz.state.step === 'test-type' && (
@@ -86,9 +83,9 @@ export default function Home() {
           )}
 
           {/* Step 2: Class Selection */}
-          {quiz.state.step === 'class-select' && quiz.state.selectedTestType && (
+          {quiz.state.step === 'class-select' && (
             <ClassSelector
-              testType={quiz.state.selectedTestType}
+              testType={quiz.state.selectedTestType || 'pretest'}
               onSelectClass={quiz.handleSelectClass}
               onBack={quiz.handleBackToTestTypeSelect}
             />
@@ -123,47 +120,69 @@ export default function Home() {
               student={quiz.state.selectedStudent}
               testType={quiz.state.selectedTestType!}
               quizVersion={quizVersion}
-              onStart={() => quiz.handleStartQuiz(quizVersion)}
+              onStart={() => quizVersion && quiz.handleStartQuiz(quizVersion)}
               onBack={() => {
                 quiz.handleBackToClassSelect();
               }}
             />
           )}
 
+          {/* Error state: quiz-instructions but no version */}
+          {quiz.state.step === 'quiz-instructions' && quiz.state.selectedStudent && !quizVersion && (
+            <div className="container max-w-2xl py-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 rounded-lg p-6 text-center"
+              >
+                <p className="text-red-700 font-semibold mb-4">錯誤：無法加載測驗版本</p>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                >
+                  返回首頁
+                </button>
+              </motion.div>
+            </div>
+          )}
+
           {/* Step 6: Quiz */}
           {quiz.state.step === 'quiz' && quiz.currentQuestion && (
             <QuestionCard
               question={quiz.currentQuestion}
-              selectedAnswer={quiz.selectedAnswer}
+              selectedAnswer={quiz.state.answers[quiz.currentQuestion.id] || null}
               showFeedback={quiz.state.showFeedback}
-              isCorrect={quiz.isCorrect}
+              isCorrect={quiz.state.answers[quiz.currentQuestion.id] === quiz.currentQuestion.correctAnswer || null}
               onSelectAnswer={quiz.handleAnswerSelect}
               onNext={quiz.handleNextQuestion}
               onPrevious={quiz.handlePreviousQuestion}
               canGoPrevious={quiz.state.currentQuestionIndex > 0}
-              canGoNext={quiz.state.currentQuestionIndex < quiz.progress.total - 1}
+              canGoNext={quiz.state.currentQuestionIndex < (quizVersion?.questions.length || 10) - 1}
               currentIndex={quiz.state.currentQuestionIndex}
-              totalQuestions={quiz.progress.total}
+              totalQuestions={quizVersion?.questions.length || 10}
               timeRemaining={quiz.state.timeRemaining}
-              formatTime={quiz.formatTime}
             />
           )}
 
           {/* Step 7: Results */}
           {quiz.state.step === 'results' && quiz.state.quizCompleted && quizVersion && (
             <ResultsPage
-              score={quiz.calculateScore()}
-              answers={quiz.state.answers}
+              score={{
+                correct: Object.values(quiz.state.answers).filter((answer, idx) => answer === quizVersion.questions[idx]?.correctAnswer).length,
+                total: quizVersion.questions.length,
+                percentage: (Object.values(quiz.state.answers).filter((answer, idx) => answer === quizVersion.questions[idx]?.correctAnswer).length / quizVersion.questions.length) * 100,
+              }}
               questions={quizVersion.questions}
+              answers={quiz.state.answers}
               versionLabel={quizVersion.label}
-              studentInfo={quiz.state.selectedStudent}
-              testType={quiz.state.selectedTestType}
-              classType={quiz.state.selectedClass || undefined}
+              studentInfo={quiz.state.selectedStudent || { id: '', name: '' }}
+              testType={quiz.state.selectedTestType || 'pretest'}
+              classType={quiz.state.selectedClass}
               biologicalSex={quiz.state.selectedSex || 'male'}
               startTime={quiz.state.startTime}
               endTime={quiz.state.endTime}
               onRestart={() => {
-                quiz.handleBackToTestTypeSelect();
+                window.location.href = '/';
               }}
               onBackHome={() => {
                 window.location.href = '/';

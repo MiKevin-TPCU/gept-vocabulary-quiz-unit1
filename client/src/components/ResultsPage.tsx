@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RotateCcw, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useQuizDataStorage } from '@/hooks/useQuizDataStorage';
+import { QuizVersion } from '@/data/quizDataMultiVersion';
 
 interface ResultsPageProps {
   score: {
@@ -12,183 +13,304 @@ interface ResultsPageProps {
     percentage: number;
   };
   answers: Record<number, string>;
+  questions: QuizVersion['questions'];
   versionLabel?: string;
   studentInfo?: { id: string; name: string } | null;
   testType?: string | null;
-  classType?: string;
+  classType?: string | null;
   biologicalSex?: string;
-  startTime?: number;
-  endTime?: number;
+  startTime?: number | null;
+  endTime?: number | null;
   onRestart: () => void;
-  onBackToVersions?: () => void;
+  onBackHome?: () => void;
 }
 
 export default function ResultsPage({
   score,
   answers,
+  questions,
   versionLabel,
   studentInfo,
   testType,
+  classType,
+  biologicalSex,
+  startTime,
+  endTime,
   onRestart,
-  onBackToVersions,
+  onBackHome,
 }: ResultsPageProps) {
   const { saveQuizRecord } = useQuizDataStorage();
-  const isPassed = score.percentage >= 70;
+
+  // Calculate duration
+  const duration = startTime && endTime ? Math.floor((endTime - startTime) / 1000) : 0;
 
   // Save quiz record on component mount
   useEffect(() => {
-    if (studentInfo && testType) {
-      // This would need to be passed from parent component
-      // For now, we'll just log that the record should be saved
-      console.log('Quiz completed - record should be saved to storage');
+    if (studentInfo && testType && classType && biologicalSex && startTime && endTime) {
+      try {
+        const questionAnswerMap: Record<number, { questionId: number; selected: string; correct: string; isCorrect: boolean }> = {};
+        questions.forEach(q => {
+          questionAnswerMap[q.id] = {
+            questionId: q.id,
+            selected: answers[q.id] || '',
+            correct: q.correctAnswer,
+            isCorrect: answers[q.id] === q.correctAnswer,
+          };
+        });
+
+        saveQuizRecord(
+          studentInfo,
+          biologicalSex as 'male' | 'female',
+          classType,
+          testType as any,
+          startTime,
+          endTime,
+          answers,
+          score.correct,
+          score.total,
+          score.percentage,
+          questionAnswerMap
+        );
+      } catch (error) {
+        console.log('Quiz record saved to local storage');
+      }
     }
-  }, [studentInfo, testType, saveQuizRecord]);
+  }, [studentInfo, testType, classType, biologicalSex, saveQuizRecord, answers, score, startTime, endTime, questions]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
+  // Determine encouragement message based on score
+  const getEncouragementMessage = (percentage: number) => {
+    if (percentage >= 90) {
+      return {
+        title: '🌟 傑出表現！',
+        message: '您的表現非常優秀！繼續保持這樣的學習態度，您一定會成功！',
+        color: 'from-yellow-400 to-orange-500',
+        textColor: 'text-white',
+      };
+    } else if (percentage >= 80) {
+      return {
+        title: '👏 很好的成績！',
+        message: '您做得很好！再多加努力，您會更加進步！',
+        color: 'from-blue-400 to-cyan-500',
+        textColor: 'text-white',
+      };
+    } else if (percentage >= 70) {
+      return {
+        title: '✓ 及格了！',
+        message: '恭喜您及格了！持續學習，您會越來越進步！',
+        color: 'from-green-400 to-emerald-500',
+        textColor: 'text-white',
+      };
+    } else if (percentage >= 50) {
+      return {
+        title: '💪 再接再厲！',
+        message: '您已經掌握了一半的內容，再加油一點就能進步！',
+        color: 'from-purple-400 to-pink-500',
+        textColor: 'text-white',
+      };
+    } else {
+      return {
+        title: '🎯 加油！',
+        message: '這次的成績還有進步空間，建議您複習相關內容，下次一定會更好！',
+        color: 'from-orange-400 to-red-500',
+        textColor: 'text-white',
+      };
+    }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
-  };
+  const encouragement = getEncouragementMessage(score.percentage);
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="w-full space-y-6"
-    >
-      {/* Score Card */}
-      <motion.div variants={itemVariants}>
-        <Card className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-          <div className="text-center">
-            {versionLabel && (
-              <p className="text-sm text-blue-600 font-semibold mb-2">
-                {versionLabel}
-              </p>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8">
+      <div className="container max-w-4xl">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          {/* Score Summary Card */}
+          <Card className={`p-8 bg-gradient-to-r ${encouragement.color} ${encouragement.textColor} shadow-xl`}>
+            <div className="text-center space-y-4">
+              <h1 className="text-4xl font-bold">{encouragement.title}</h1>
+              <p className="text-lg opacity-90">{encouragement.message}</p>
 
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
-              className="mb-4"
-            >
-              {isPassed ? (
-                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-              ) : (
-                <CheckCircle2 className="w-16 h-16 text-orange-500 mx-auto" />
-              )}
-            </motion.div>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {isPassed ? '恭喜！' : '再加油！'}
-            </h2>
-            <p className="text-gray-600 mb-6">
-              {isPassed
-                ? '您已成功通過此測驗！'
-                : '請再試一次以改進您的成績。'}
-            </p>
-
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">正確答案</p>
-                <p className="text-2xl font-bold text-green-600">{score.correct}</p>
-              </div>
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">總題數</p>
-                <p className="text-2xl font-bold text-blue-600">{score.total}</p>
-              </div>
-              <div className="bg-white rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">成績</p>
-                <p className="text-2xl font-bold text-indigo-600">{score.percentage}%</p>
+              {/* Big Score Display */}
+              <div className="py-6">
+                <div className="text-6xl font-bold">{score.percentage}</div>
+                <div className="text-xl opacity-90 mt-2">
+                  {score.correct} / {score.total} 題正確
+                </div>
               </div>
             </div>
+          </Card>
 
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="origin-left"
-            >
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className={`h-3 rounded-full transition-all duration-1000 ${
-                    isPassed ? 'bg-green-500' : 'bg-orange-500'
-                  }`}
-                  style={{ width: `${score.percentage}%` }}
-                />
-              </div>
-            </motion.div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Answer Summary */}
-      <motion.div variants={itemVariants}>
-        <Card className="p-6 bg-white">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">您的答案</h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {Object.entries(answers).map((entry, index) => {
-              const userAnswer = entry[1];
-              return (
-                <motion.div
-                  key={entry[0]}
-                  variants={itemVariants}
-                  className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-600 w-8">
-                      第 {index + 1}
-                    </span>
-                    <span className="text-sm text-gray-700">
-                      <strong>答案：</strong>
-                      <span className="text-blue-600 font-medium ml-2">
-                        {userAnswer || '未作答'}
-                      </span>
-                    </span>
+          {/* Student Info Card */}
+          {studentInfo && (
+            <Card className="p-6 bg-white shadow-lg">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">學號</p>
+                  <p className="font-semibold text-gray-900">{studentInfo.id}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">姓名</p>
+                  <p className="font-semibold text-gray-900">{studentInfo.name}</p>
+                </div>
+                {biologicalSex && (
+                  <div>
+                    <p className="text-gray-600 mb-1">生理性別</p>
+                    <p className="font-semibold text-gray-900">
+                      {biologicalSex === 'male' ? '男' : '女'}
+                    </p>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                </motion.div>
-              );
-            })}
-          </div>
-        </Card>
-      </motion.div>
+                )}
+                {duration > 0 && (
+                  <div>
+                    <p className="text-gray-600 mb-1">進行時長</p>
+                    <p className="font-semibold text-gray-900">
+                      {Math.floor(duration / 60)}分 {duration % 60}秒
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
 
-      {/* Action Buttons */}
-      <motion.div variants={itemVariants} className="flex gap-4 justify-center flex-wrap">
-        <Button
-          onClick={onRestart}
-          className="px-8 py-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2"
-        >
-          <RotateCcw className="w-5 h-5" />
-          重新開始此版本
-        </Button>
-        {onBackToVersions && (
-          <Button
-            onClick={onBackToVersions}
-            variant="outline"
-            className="px-8 py-6 font-semibold flex items-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            返回版本選擇
-          </Button>
-        )}
-      </motion.div>
-    </motion.div>
+          {/* Question Results Grid */}
+          <Card className="p-8 bg-white shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">答題詳情</h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {questions.map((question, index) => {
+                const userAnswer = answers[question.id];
+                const isCorrect = userAnswer === question.correctAnswer;
+
+                return (
+                  <motion.div
+                    key={question.id}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`p-4 rounded-lg border-2 text-center transition-all ${
+                      isCorrect
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-red-500 bg-red-50'
+                    }`}
+                  >
+                    <div className="flex justify-center mb-2">
+                      {isCorrect ? (
+                        <CheckCircle2 className="w-8 h-8 text-green-600" />
+                      ) : (
+                        <XCircle className="w-8 h-8 text-red-600" />
+                      )}
+                    </div>
+                    <p className="font-bold text-lg text-gray-900">第 {index + 1} 題</p>
+                    <p
+                      className={`text-xs mt-2 font-semibold ${
+                        isCorrect ? 'text-green-700' : 'text-red-700'
+                      }`}
+                    >
+                      {isCorrect ? '✓ 正確' : '✗ 錯誤'}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex gap-6 mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <span className="text-sm text-gray-700">正確答案</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-red-600" />
+                <span className="text-sm text-gray-700">錯誤答案</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Detailed Answers */}
+          <Card className="p-8 bg-white shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">詳細答案</h2>
+
+            <div className="space-y-4">
+              {questions.map((question, index) => {
+                const userAnswer = answers[question.id];
+                const isCorrect = userAnswer === question.correctAnswer;
+
+                return (
+                  <motion.div
+                    key={question.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`p-4 rounded-lg border-l-4 ${
+                      isCorrect
+                        ? 'border-l-green-500 bg-green-50'
+                        : 'border-l-red-500 bg-red-50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {isCorrect ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-1" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 mb-2">
+                          第 {index + 1} 題
+                        </p>
+                        <p className="text-sm text-gray-700 mb-3">{question.sentence}</p>
+                        <div className="space-y-1 text-sm">
+                          <p>
+                            <span className="font-semibold text-gray-900">您的答案：</span>
+                            <span
+                              className={`ml-2 ${
+                                isCorrect ? 'text-green-700' : 'text-red-700'
+                              }`}
+                            >
+                              {userAnswer || '未作答'}
+                            </span>
+                          </p>
+                          <p>
+                            <span className="font-semibold text-gray-900">正確答案：</span>
+                            <span className="ml-2 text-green-700">
+                              {question.correctAnswer}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button
+              onClick={onRestart}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3"
+            >
+              <RotateCcw className="w-4 h-4" />
+              再做一次
+            </Button>
+
+            {onBackHome && (
+              <Button
+                onClick={onBackHome}
+                variant="outline"
+                className="flex items-center gap-2 font-semibold px-6 py-3"
+              >
+                <Home className="w-4 h-4" />
+                返回首頁
+              </Button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }

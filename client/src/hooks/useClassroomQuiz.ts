@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { studentsData } from '@/data/studentsData';
 import { QuizVersion } from '@/data/quizDataMultiVersion';
 
@@ -24,6 +24,8 @@ export interface ClassroomQuizState {
   selectedVersion: QuizVersion | null;
   startTime: number | null;
   endTime: number | null;
+  timeRemaining: number; // seconds
+  isTimeUp: boolean;
 }
 
 export const useClassroomQuiz = () => {
@@ -40,7 +42,36 @@ export const useClassroomQuiz = () => {
     selectedVersion: null,
     startTime: null,
     endTime: null,
+    timeRemaining: 600, // 10 minutes in seconds
+    isTimeUp: false,
   });
+
+  // Timer effect
+  useEffect(() => {
+    if (state.step !== 'quiz' || state.isTimeUp) return;
+
+    const interval = setInterval(() => {
+      setState(prev => {
+        if (prev.timeRemaining <= 1) {
+          // Time's up - auto submit
+          return {
+            ...prev,
+            timeRemaining: 0,
+            isTimeUp: true,
+            step: 'results',
+            quizCompleted: true,
+            endTime: Date.now(),
+          };
+        }
+        return {
+          ...prev,
+          timeRemaining: prev.timeRemaining - 1,
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [state.step, state.isTimeUp]);
 
   const handleSelectTestType = useCallback((testType: QuizType) => {
     setState(prev => ({
@@ -80,10 +111,8 @@ export const useClassroomQuiz = () => {
       selectedVersion: version,
       step: 'quiz',
       startTime: Date.now(),
-      currentQuestionIndex: 0,
-      answers: {},
-      showFeedback: false,
-      quizCompleted: false,
+      timeRemaining: 600, // Reset to 10 minutes
+      isTimeUp: false,
     }));
   }, []);
 
@@ -99,7 +128,7 @@ export const useClassroomQuiz = () => {
       },
       showFeedback: true,
     }));
-  }, [state.currentQuestionIndex, state.selectedVersion]);
+  }, [state.selectedVersion, state.currentQuestionIndex]);
 
   const handleNextQuestion = useCallback(() => {
     if (!state.selectedVersion) return;
@@ -111,13 +140,15 @@ export const useClassroomQuiz = () => {
         showFeedback: false,
       }));
     } else {
+      // Quiz completed
       setState(prev => ({
         ...prev,
+        step: 'results',
         quizCompleted: true,
         endTime: Date.now(),
       }));
     }
-  }, [state.currentQuestionIndex, state.selectedVersion]);
+  }, [state.selectedVersion, state.currentQuestionIndex]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (state.currentQuestionIndex > 0) {
@@ -136,6 +167,8 @@ export const useClassroomQuiz = () => {
       selectedClass: null,
       selectedStudent: null,
       selectedSex: null,
+      timeRemaining: 600,
+      isTimeUp: false,
     }));
   }, []);
 
@@ -146,43 +179,60 @@ export const useClassroomQuiz = () => {
       selectedTestType: null,
       selectedClass: null,
       selectedStudent: null,
+      selectedSex: null,
+      currentQuestionIndex: 0,
+      answers: {},
+      showFeedback: false,
+      quizCompleted: false,
+      timeRemaining: 600,
+      isTimeUp: false,
     }));
   }, []);
 
-  const getStudentList = useCallback((): StudentInfo[] => {
+  const getStudentList = useCallback(() => {
     if (!state.selectedClass) return [];
     return studentsData[state.selectedClass] || [];
   }, [state.selectedClass]);
 
   const calculateScore = useCallback(() => {
-    if (!state.selectedVersion) {
-      return { correct: 0, total: 0, percentage: 0 };
-    }
+    if (!state.selectedVersion) return { correct: 0, total: 0, percentage: 0 };
 
     let correct = 0;
-    state.selectedVersion.questions.forEach(question => {
-      if (state.answers[question.id] === question.correctAnswer) {
+    state.selectedVersion.questions.forEach((q) => {
+      if (state.answers[q.id] === q.correctAnswer) {
         correct++;
       }
     });
-    
+
     const total = state.selectedVersion.questions.length;
+    const percentage = Math.round((correct / total) * 100);
+
     return {
       correct,
       total,
       percentage: Math.round((correct / total) * 100),
     };
-  }, [state.answers, state.selectedVersion]);
+  }, [state.selectedVersion, state.answers]);
 
-  const currentQuestion = state.selectedVersion?.questions[state.currentQuestionIndex];
+  const currentQuestion = state.selectedVersion
+    ? state.selectedVersion.questions[state.currentQuestionIndex]
+    : null;
+
   const isAnswered = currentQuestion ? state.answers[currentQuestion.id] !== undefined : false;
-  const selectedAnswer = currentQuestion ? state.answers[currentQuestion.id] : undefined;
-  const isCorrect = selectedAnswer === currentQuestion?.correctAnswer;
 
-  const progress = state.selectedVersion ? {
-    current: state.currentQuestionIndex + 1,
-    total: state.selectedVersion.questions.length,
-  } : { current: 0, total: 0 };
+  const selectedAnswer = currentQuestion ? state.answers[currentQuestion.id] : null;
+
+  const isCorrect = selectedAnswer && currentQuestion ? selectedAnswer === currentQuestion.correctAnswer : null;
+
+  const progress = state.selectedVersion
+    ? { current: state.currentQuestionIndex + 1, total: state.selectedVersion.questions.length }
+    : { current: 0, total: 0 };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return {
     state,
@@ -203,5 +253,6 @@ export const useClassroomQuiz = () => {
     selectedAnswer,
     isCorrect,
     progress,
+    formatTime,
   };
 };

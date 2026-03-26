@@ -22,8 +22,8 @@ export default function Home() {
   const quiz = useClassroomQuiz();
 
   // Get quiz version based on test type
-  const quizVersion = quiz.state.selectedTestType 
-    ? getQuizVersion(quiz.state.selectedTestType)
+  const quizVersion = quiz.state.selectedVersion
+    ? quiz.state.selectedVersion
     : null;
 
   return (
@@ -124,23 +124,33 @@ export default function Home() {
               onSelectAnswer={quiz.handleAnswerSelect}
               onNext={quiz.handleNextQuestion}
               onPrevious={quiz.handlePreviousQuestion}
-              canGoPrevious={quiz.progress.current > 1}
-              canGoNext={quiz.progress.current < quiz.progress.total}
+              canGoPrevious={quiz.state.currentQuestionIndex > 0}
+              canGoNext={quiz.state.currentQuestionIndex < quiz.progress.total - 1}
               currentIndex={quiz.state.currentQuestionIndex}
               totalQuestions={quiz.progress.total}
+              timeRemaining={quiz.state.timeRemaining}
+              formatTime={quiz.formatTime}
             />
           )}
 
           {/* Step 7: Results */}
-          {quiz.state.step === 'results' && quiz.state.quizCompleted && (
+          {quiz.state.step === 'results' && quiz.state.quizCompleted && quizVersion && (
             <ResultsPage
               score={quiz.calculateScore()}
               answers={quiz.state.answers}
-              versionLabel={quizVersion?.label}
+              questions={quizVersion.questions}
+              versionLabel={quizVersion.label}
               studentInfo={quiz.state.selectedStudent}
               testType={quiz.state.selectedTestType}
+              classType={quiz.state.selectedClass || undefined}
+              biologicalSex={quiz.state.selectedSex || 'male'}
+              startTime={quiz.state.startTime}
+              endTime={quiz.state.endTime}
               onRestart={() => {
                 quiz.handleBackToTestTypeSelect();
+              }}
+              onBackHome={() => {
+                window.location.href = '/';
               }}
             />
           )}

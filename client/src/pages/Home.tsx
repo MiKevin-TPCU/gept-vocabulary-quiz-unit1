@@ -1,28 +1,29 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import VersionSelector from '@/components/VersionSelector';
+import TestTypeSelector from '@/components/TestTypeSelector';
+import ClassSelector from '@/components/ClassSelector';
+import StudentSelector from '@/components/StudentSelector';
+import QuizInstructions from '@/components/QuizInstructions';
 import QuestionCard from '@/components/QuestionCard';
 import ResultsPage from '@/components/ResultsPage';
-import { useMultiVersionQuiz } from '@/hooks/useMultiVersionQuiz';
-import { getAllVersions } from '@/data/quizDataMultiVersion';
+import { useClassroomQuiz } from '@/hooks/useClassroomQuiz';
+import { getQuizVersion } from '@/data/quizDataMultiVersion';
 
 /**
- * Home Page - Multi-Version Quiz Interface
+ * Home Page - Classroom Quiz Interface
  * 
  * Design Philosophy:
- * - Clean, modern EdTech interface with focus on learning
- * - Bright, welcoming colors (blue primary, green success, red error)
- * - Smooth animations and transitions for engagement
- * - Clear information hierarchy and visual feedback
- * - Support for three test versions: pretest, immediate posttest, delayed posttest
+ * - Modern EdTech interface with focus on classroom management
+ * - Clear step-by-step flow: Test Type → Class → Student → Instructions → Quiz → Results
+ * - Bright, welcoming colors with smooth animations
+ * - Support for three classes and student verification
  */
 export default function Home() {
-  const quiz = useMultiVersionQuiz();
-  const versions = getAllVersions();
+  const quiz = useClassroomQuiz();
 
-  const handleBackToVersions = () => {
-    quiz.handleRestart();
-  };
+  // Get quiz version based on test type
+  const quizVersion = quiz.state.selectedTestType 
+    ? getQuizVersion(quiz.state.selectedTestType)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -36,23 +37,10 @@ export default function Home() {
               </div>
               <h1 className="text-xl font-bold text-gray-900">GEPT 詞彙測驗</h1>
             </div>
-            {quiz.state.selectedVersion && !quiz.state.quizCompleted && (
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-gray-600">
-                  {quiz.state.selectedVersion.label}
-                </div>
-                <div className="text-sm text-gray-600">
-                  進度: {quiz.progress.current} / {quiz.progress.total}
-                </div>
+            {quiz.state.selectedStudent && (
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span>{quiz.state.selectedStudent.id} - {quiz.state.selectedStudent.name}</span>
               </div>
-            )}
-            {quiz.state.quizCompleted && (
-              <button
-                onClick={handleBackToVersions}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                ← 返回版本選擇
-              </button>
             )}
           </div>
         </div>
@@ -61,42 +49,56 @@ export default function Home() {
       {/* Main Content */}
       <main className="container py-8 md:py-12">
         <motion.div
-          key={
-            !quiz.state.selectedVersion
-              ? 'version-selector'
-              : quiz.state.quizCompleted
-              ? 'results'
-              : 'quiz'
-          }
+          key={quiz.state.step}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           className="max-w-4xl mx-auto"
         >
-          {!quiz.state.selectedVersion ? (
-            <VersionSelector
-              versions={versions}
-              onSelectVersion={(versionName) => {
-                const selectedVersion = versions.find(v => v.name === versionName);
-                if (selectedVersion) {
-                  quiz.handleSelectVersion(selectedVersion);
-                }
-              }}
+          {/* Step 1: Test Type Selection */}
+          {quiz.state.step === 'test-type' && (
+            <TestTypeSelector
+              onSelectTestType={quiz.handleSelectTestType}
             />
-          ) : quiz.state.quizCompleted ? (
-            <div>
-              <ResultsPage
-                score={quiz.calculateScore()}
-                answers={quiz.state.answers}
-                versionLabel={quiz.state.selectedVersion.label}
-                onRestart={quiz.handleRestartSameVersion}
-                onBackToVersions={handleBackToVersions}
-              />
-            </div>
-          ) : (
+          )}
+
+          {/* Step 2: Class Selection */}
+          {quiz.state.step === 'class-select' && quiz.state.selectedTestType && (
+            <ClassSelector
+              testType={quiz.state.selectedTestType}
+              onSelectClass={quiz.handleSelectClass}
+              onBack={quiz.handleBackToTestTypeSelect}
+            />
+          )}
+
+          {/* Step 3: Student Selection */}
+          {quiz.state.step === 'student-select' && quiz.state.selectedClass && (
+            <StudentSelector
+              classType={quiz.state.selectedClass}
+              students={quiz.getStudentList()}
+              onSelectStudent={quiz.handleSelectStudent}
+              onBack={quiz.handleBackToClassSelect}
+            />
+          )}
+
+          {/* Step 4: Quiz Instructions */}
+          {quiz.state.step === 'quiz-instructions' && 
+           quiz.state.selectedStudent && 
+           quizVersion && (
+            <QuizInstructions
+              student={quiz.state.selectedStudent}
+              testType={quiz.state.selectedTestType!}
+              quizVersion={quizVersion}
+              onStart={() => quiz.handleStartQuiz(quizVersion)}
+              onBack={quiz.handleBackToClassSelect}
+            />
+          )}
+
+          {/* Step 5: Quiz */}
+          {quiz.state.step === 'quiz' && quiz.currentQuestion && (
             <QuestionCard
-              question={quiz.currentQuestion!}
+              question={quiz.currentQuestion}
               selectedAnswer={quiz.selectedAnswer}
               showFeedback={quiz.state.showFeedback}
               isCorrect={quiz.isCorrect}
@@ -109,15 +111,29 @@ export default function Home() {
               totalQuestions={quiz.progress.total}
             />
           )}
+
+          {/* Step 6: Results */}
+          {quiz.state.step === 'results' && quiz.state.quizCompleted && (
+            <ResultsPage
+              score={quiz.calculateScore()}
+              answers={quiz.state.answers}
+              versionLabel={quizVersion?.label}
+              studentInfo={quiz.state.selectedStudent}
+              testType={quiz.state.selectedTestType}
+              onRestart={() => {
+                quiz.handleBackToTestTypeSelect();
+              }}
+            />
+          )}
         </motion.div>
       </main>
 
       {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-200 mt-12">
         <div className="container py-6 text-center text-sm text-gray-600">
-          <p>GEPT 詞彙互動測驗平台 | 所有詞彙來自 GEPT 初級官方詞彙表</p>
+          <p>GEPT 詞彙互動測驗平台</p>
           <p className="mt-2 text-xs text-gray-500">
-            碩論研究實驗設計 - 第一單元詞彙測驗
+            碩論研究實驗設計 - 第一週測驗
           </p>
         </div>
       </footer>

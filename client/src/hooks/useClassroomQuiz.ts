@@ -1,0 +1,194 @@
+import { useState, useCallback } from 'react';
+import { studentsData } from '@/data/studentsData';
+import { QuizVersion } from '@/data/quizDataMultiVersion';
+
+export type ClassType = 'Class TL' | 'Class KB' | 'Class EER';
+export type QuizType = 'pretest' | 'immediate_posttest';
+
+export interface StudentInfo {
+  id: string;
+  name: string;
+}
+
+export interface ClassroomQuizState {
+  step: 'test-type' | 'class-select' | 'student-select' | 'quiz-instructions' | 'quiz' | 'results';
+  selectedTestType: QuizType | null;
+  selectedClass: ClassType | null;
+  selectedStudent: StudentInfo | null;
+  currentQuestionIndex: number;
+  answers: Record<number, string>;
+  showFeedback: boolean;
+  quizCompleted: boolean;
+  selectedVersion: QuizVersion | null;
+  startTime: number | null;
+  endTime: number | null;
+}
+
+export const useClassroomQuiz = () => {
+  const [state, setState] = useState<ClassroomQuizState>({
+    step: 'test-type',
+    selectedTestType: null,
+    selectedClass: null,
+    selectedStudent: null,
+    currentQuestionIndex: 0,
+    answers: {},
+    showFeedback: false,
+    quizCompleted: false,
+    selectedVersion: null,
+    startTime: null,
+    endTime: null,
+  });
+
+  const handleSelectTestType = useCallback((testType: QuizType) => {
+    setState(prev => ({
+      ...prev,
+      selectedTestType: testType,
+      step: 'class-select',
+    }));
+  }, []);
+
+  const handleSelectClass = useCallback((classType: ClassType) => {
+    setState(prev => ({
+      ...prev,
+      selectedClass: classType,
+      step: 'student-select',
+    }));
+  }, []);
+
+  const handleSelectStudent = useCallback((student: StudentInfo) => {
+    setState(prev => ({
+      ...prev,
+      selectedStudent: student,
+      step: 'quiz-instructions',
+    }));
+  }, []);
+
+  const handleStartQuiz = useCallback((version: QuizVersion) => {
+    setState(prev => ({
+      ...prev,
+      selectedVersion: version,
+      step: 'quiz',
+      startTime: Date.now(),
+      currentQuestionIndex: 0,
+      answers: {},
+      showFeedback: false,
+      quizCompleted: false,
+    }));
+  }, []);
+
+  const handleAnswerSelect = useCallback((answer: string) => {
+    if (!state.selectedVersion) return;
+    
+    const currentQuestion = state.selectedVersion.questions[state.currentQuestionIndex];
+    setState(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [currentQuestion.id]: answer,
+      },
+      showFeedback: true,
+    }));
+  }, [state.currentQuestionIndex, state.selectedVersion]);
+
+  const handleNextQuestion = useCallback(() => {
+    if (!state.selectedVersion) return;
+    
+    if (state.currentQuestionIndex < state.selectedVersion.questions.length - 1) {
+      setState(prev => ({
+        ...prev,
+        currentQuestionIndex: prev.currentQuestionIndex + 1,
+        showFeedback: false,
+      }));
+    } else {
+      setState(prev => ({
+        ...prev,
+        quizCompleted: true,
+        endTime: Date.now(),
+      }));
+    }
+  }, [state.currentQuestionIndex, state.selectedVersion]);
+
+  const handlePreviousQuestion = useCallback(() => {
+    if (state.currentQuestionIndex > 0) {
+      setState(prev => ({
+        ...prev,
+        currentQuestionIndex: prev.currentQuestionIndex - 1,
+        showFeedback: false,
+      }));
+    }
+  }, [state.currentQuestionIndex]);
+
+  const handleBackToClassSelect = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      step: 'class-select',
+      selectedClass: null,
+      selectedStudent: null,
+    }));
+  }, []);
+
+  const handleBackToTestTypeSelect = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      step: 'test-type',
+      selectedTestType: null,
+      selectedClass: null,
+      selectedStudent: null,
+    }));
+  }, []);
+
+  const getStudentList = useCallback((): StudentInfo[] => {
+    if (!state.selectedClass) return [];
+    return studentsData[state.selectedClass] || [];
+  }, [state.selectedClass]);
+
+  const calculateScore = useCallback(() => {
+    if (!state.selectedVersion) {
+      return { correct: 0, total: 0, percentage: 0 };
+    }
+
+    let correct = 0;
+    state.selectedVersion.questions.forEach(question => {
+      if (state.answers[question.id] === question.correctAnswer) {
+        correct++;
+      }
+    });
+    
+    const total = state.selectedVersion.questions.length;
+    return {
+      correct,
+      total,
+      percentage: Math.round((correct / total) * 100),
+    };
+  }, [state.answers, state.selectedVersion]);
+
+  const currentQuestion = state.selectedVersion?.questions[state.currentQuestionIndex];
+  const isAnswered = currentQuestion ? state.answers[currentQuestion.id] !== undefined : false;
+  const selectedAnswer = currentQuestion ? state.answers[currentQuestion.id] : undefined;
+  const isCorrect = selectedAnswer === currentQuestion?.correctAnswer;
+
+  const progress = state.selectedVersion ? {
+    current: state.currentQuestionIndex + 1,
+    total: state.selectedVersion.questions.length,
+  } : { current: 0, total: 0 };
+
+  return {
+    state,
+    handleSelectTestType,
+    handleSelectClass,
+    handleSelectStudent,
+    handleStartQuiz,
+    handleAnswerSelect,
+    handleNextQuestion,
+    handlePreviousQuestion,
+    handleBackToClassSelect,
+    handleBackToTestTypeSelect,
+    getStudentList,
+    calculateScore,
+    currentQuestion,
+    isAnswered,
+    selectedAnswer,
+    isCorrect,
+    progress,
+  };
+};

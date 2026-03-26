@@ -11,6 +11,8 @@ interface ResultsPageProps {
   };
   answers: Record<number, string>;
   versionLabel?: string;
+  studentInfo?: { id: string; name: string } | null;
+  testType?: string | null;
   onRestart: () => void;
   onBackToVersions?: () => void;
 }
@@ -19,6 +21,8 @@ export default function ResultsPage({
   score,
   answers,
   versionLabel,
+  studentInfo,
+  testType,
   onRestart,
   onBackToVersions,
 }: ResultsPageProps) {

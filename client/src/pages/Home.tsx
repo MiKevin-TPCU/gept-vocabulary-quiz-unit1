@@ -227,7 +227,7 @@ export default function Home() {
         <div className="container py-6 text-center text-sm text-gray-600">
           <p>GEPT 詞彙互動測驗平台</p>
           <p className="mt-2 text-xs text-gray-500">
-            碩論研究實驗設計 - 第一週測驗
+            碩論研究實驗設計 - 第二週測驗
           </p>
         </div>
       </footer>

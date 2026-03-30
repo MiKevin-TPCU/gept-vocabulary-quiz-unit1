@@ -11,21 +11,21 @@ interface ClassSelectorProps {
 }
 
 const classInfo: Record<ClassType, { name: string; time: string; color: string; bgColor: string }> = {
-  'Class TL': {
-    name: 'Class TL',
-    time: 'Friday, AI',
-    color: 'text-blue-600',
-    bgColor: 'from-blue-50 to-blue-100 border-blue-200',
-  },
   'Class KB': {
     name: 'Class KB',
     time: 'Tuesday, AJ',
-    color: 'text-green-600',
-    bgColor: 'from-green-50 to-green-100 border-green-200',
+    color: 'text-blue-600',
+    bgColor: 'from-blue-50 to-blue-100 border-blue-200',
   },
   'Class EER': {
     name: 'Class EER',
     time: 'Wednesday, BM',
+    color: 'text-green-600',
+    bgColor: 'from-green-50 to-green-100 border-green-200',
+  },
+  'Class TL': {
+    name: 'Class TL',
+    time: 'Friday, AI',
     color: 'text-purple-600',
     bgColor: 'from-purple-50 to-purple-100 border-purple-200',
   },

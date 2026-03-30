@@ -10,22 +10,25 @@ interface ClassSelectorProps {
   onBack: () => void;
 }
 
-const classInfo: Record<ClassType, { name: string; time: string; color: string; bgColor: string }> = {
+const classInfo: Record<ClassType, { name: string; time: string; ta: string; color: string; bgColor: string }> = {
   'Class KB': {
     name: 'Class KB',
     time: 'Tuesday, AJ',
+    ta: '(TA：Irene)',
     color: 'text-blue-600',
     bgColor: 'from-blue-50 to-blue-100 border-blue-200',
   },
   'Class EER': {
     name: 'Class TL',
     time: 'Friday, AI',
+    ta: '(TA：Anne)',
     color: 'text-green-600',
     bgColor: 'from-green-50 to-green-100 border-green-200',
   },
   'Class TL': {
     name: 'Class EER',
     time: 'Wednesday, BM',
+    ta: '(TA：Irene)',
     color: 'text-purple-600',
     bgColor: 'from-purple-50 to-purple-100 border-purple-200',
   },
@@ -95,8 +98,8 @@ export default function ClassSelector({
                   {info.name}
                 </h3>
 
-                <p className="text-sm text-gray-600 mb-4">
-                  {info.time}
+                <p className="text-sm text-gray-600 mb-1">
+                  {info.time} {info.ta}
                 </p>
 
                 <Button
